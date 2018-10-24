@@ -41,12 +41,19 @@ namespace BTCPayServer.Configuration
                 return (T)(object)IPAddress.Parse(str);
             else if (typeof(T) == typeof(IPEndPoint))
             {
-                var separator = str.LastIndexOf(":", StringComparison.InvariantCulture);
-                if (separator == -1)
-                    throw new FormatException();
-                var ip = str.Substring(0, separator);
-                var port = str.Substring(separator + 1);
-                return (T)(object)new IPEndPoint(IPAddress.Parse(ip), int.Parse(port, CultureInfo.InvariantCulture));
+                if (str.StartsWith('*'))
+                {
+                    return (T)(object)new IPEndPoint(IPAddress.Loopback, 0);
+                }
+                else
+                {
+                    var separator = str.LastIndexOf(":", StringComparison.InvariantCulture);
+                    if (separator == -1)
+                        throw new FormatException();
+                    var ip = str.Substring(0, separator);
+                    var port = str.Substring(separator + 1);
+                    return (T)(object)new IPEndPoint(IPAddress.Parse(ip), int.Parse(port, CultureInfo.InvariantCulture));
+                }
             }
             else if (typeof(T) == typeof(int))
             {

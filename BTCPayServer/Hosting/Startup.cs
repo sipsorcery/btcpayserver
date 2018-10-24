@@ -123,20 +123,31 @@ namespace BTCPayServer.Hosting
                 var networkType = DefaultConfiguration.GetNetworkType(Configuration);
                 var defaultSettings = BTCPayDefaultSettings.GetDefaultSettings(networkType);
                 var btcPaySettings = Configuration.Get<BTCPayServerOptions>();
-                var bind = Configuration.GetOrDefault<IPAddress>("bind", IPAddress.Loopback);
                 int port = Configuration.GetOrDefault<int>("port", defaultSettings.DefaultPort);
+                string bindToAll = Configuration.GetOrDefault<string>("bind", null);
 
-                if (!String.IsNullOrEmpty(btcPaySettings.HttpsCertificateFilePath) && File.Exists(btcPaySettings.HttpsCertificateFilePath))
+                if (bindToAll == "0.0.0.0")
                 {
-                    Logs.Configuration.LogInformation($"Https certificate file path {btcPaySettings.HttpsCertificateFilePath}.");
-                    kestrel.Listen(bind, port, l =>
+                    kestrel.ListenAnyIP(port, l =>
                     {
-                        l.UseHttps(btcPaySettings.HttpsCertificateFilePath, btcPaySettings.HttpsCertificateFilePassword);
+                        if (!String.IsNullOrEmpty(btcPaySettings.HttpsCertificateFilePath) && File.Exists(btcPaySettings.HttpsCertificateFilePath))
+                        {
+                            l.UseHttps(btcPaySettings.HttpsCertificateFilePath, btcPaySettings.HttpsCertificateFilePassword);
+                        }
                     });
                 }
                 else
                 {
-                    kestrel.Listen(bind, port);
+                    IPAddress bindToIP = Configuration.GetOrDefault<IPAddress>("bind", IPAddress.Loopback);
+
+                    kestrel.Listen(bindToIP, port, l =>
+                    {
+                        if (!String.IsNullOrEmpty(btcPaySettings.HttpsCertificateFilePath) && File.Exists(btcPaySettings.HttpsCertificateFilePath))
+                        {
+                            Logs.Configuration.LogInformation($"Https certificate file path {btcPaySettings.HttpsCertificateFilePath}.");
+                            l.UseHttps(btcPaySettings.HttpsCertificateFilePath, btcPaySettings.HttpsCertificateFilePassword);
+                        }
+                    });
                 }
             });
         }
