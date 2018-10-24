@@ -249,6 +249,16 @@ namespace BTCPayServer.Configuration
             builder.Path = RootPath;
             return builder.ToString();
         }
+        public string HttpsCertificateFilePath  // Certificate and key file (typically .pfx) to use when binding to HTTPS listener.
+        {
+            get;
+            set;
+        }
+        public string HttpsCertificateFilePassword // Password for certificate when binding to HTTPS listener.
+        {
+            get;
+            set;
+        }
     }
 
     public class ExternalServices : MultiValueDictionary<string, ExternalService>

@@ -118,15 +118,27 @@ namespace BTCPayServer.Hosting
                     b.AllowAnyMethod().AllowAnyHeader().AllowAnyOrigin();
                 });
             });
+            services.Configure<KestrelServerOptions>(kestrel =>
+            {
+                var networkType = DefaultConfiguration.GetNetworkType(Configuration);
+                var defaultSettings = BTCPayDefaultSettings.GetDefaultSettings(networkType);
+                var btcPaySettings = Configuration.Get<BTCPayServerOptions>();
+                var bind = Configuration.GetOrDefault<IPAddress>("bind", IPAddress.Loopback);
+                int port = Configuration.GetOrDefault<int>("port", defaultSettings.DefaultPort);
 
-            // Needed to debug U2F for ledger support
-            //services.Configure<KestrelServerOptions>(kestrel =>
-            //{
-            //    kestrel.Listen(IPAddress.Loopback, 5012, l =>
-            //    {
-            //        l.UseHttps("devtest.pfx", "toto");
-            //    });
-            //});
+                if (!String.IsNullOrEmpty(btcPaySettings.HttpsCertificateFilePath) && File.Exists(btcPaySettings.HttpsCertificateFilePath))
+                {
+                    Logs.Configuration.LogInformation($"Https certificate file path {btcPaySettings.HttpsCertificateFilePath}.");
+                    kestrel.Listen(bind, port, l =>
+                    {
+                        l.UseHttps(btcPaySettings.HttpsCertificateFilePath, btcPaySettings.HttpsCertificateFilePassword);
+                    });
+                }
+                else
+                {
+                    kestrel.Listen(bind, port);
+                }
+            });
         }
 
         public void Configure(
